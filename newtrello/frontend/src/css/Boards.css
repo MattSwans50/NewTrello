@@ -1,0 +1,39 @@
+/* Boards.css */
+
+.boards-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .board-buttons-section,
+  .create-board-section,
+  .selected-board-section {
+    margin: 10px;
+    width: 90%; /* Adjust based on your preference */
+  }
+  
+  .selected-board-section {
+    width: 100%;
+  }
+  .static-items-container {
+    display: flex;
+    padding: 8px;
+    margin-bottom: 20px;
+    border: 1px dashed #666;
+    overflow: auto;
+  }
+
+.list {
+  background-color: #ebecf0;
+  border-radius: 3px;
+  width: 300px;
+  padding: 8px;
+  margin-right: 10px;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+}
+  
