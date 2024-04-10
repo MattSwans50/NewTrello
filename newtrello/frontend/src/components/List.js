@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Card from "./Card";
 import "../css/List.css";
-import { Draggable } from 'react-beautiful-dnd';
+import { Draggable, Droppable } from 'react-beautiful-dnd';
 
 function List({ list, fetchLists }) {
   const [showCreateCardForm, setShowCreateCardForm] = useState(false);
@@ -15,21 +15,21 @@ function List({ list, fetchLists }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title: newCardTitle, list: list._id }),
+        body: JSON.stringify({ title: newCardTitle, listId: list._id }), // Ensure this matches the backend's expected fields
       });
       if (response.ok) {
-        await response.json();
-        // Here, you might want to update the local state if managing cards locally,
-        // or re-fetch the list's data to include the new card.
-        fetchLists(); // For simplicity, just re-fetch all lists to update UI
+        fetchLists(); // Refresh lists to include the new card
         setNewCardTitle("");
         setShowCreateCardForm(false);
+      } else {
+        // Handle non-OK responses
+        const errorResponse = await response.json();
+        console.error("Error creating card:", errorResponse);
       }
     } catch (error) {
       console.error("Error creating card:", error);
     }
   };
-
   const deleteList = async () => {
     if (window.confirm("Are you sure you want to delete this list?")) {
       const response = await fetch(`http://localhost:5000/api/lists/${list._id}`, {
@@ -40,14 +40,12 @@ function List({ list, fetchLists }) {
       }
     }
   };
-
   return (
     <div className="list" style={{ margin: '0 8px', padding: '8px', backgroundColor: '#e2e2e2', borderRadius: '4px' }}>
       <h3>{list.title}</h3>
       <button onClick={() => setShowCreateCardForm(!showCreateCardForm)}>
         Create Card
       </button>
-      <button onClick={deleteList}>Delete List</button>
       {showCreateCardForm && (
         <form onSubmit={handleCreateCard}>
           <input
@@ -60,14 +58,29 @@ function List({ list, fetchLists }) {
           <button type="submit">Add Card</button>
         </form>
       )}
-      <div className="cards">
-      {(list.cards || []).map((card) => (
-          <Card key={card._id} card={card} fetchCards={() => fetchLists()} />
-        ))}
-      </div>
+      <Droppable droppableId={String(list._id)}>
+        {(provided) => (
+          <div className="cards" ref={provided.innerRef} {...provided.droppableProps}>
+            {(list.cards || []).map((card, index) => (
+              <Draggable key={card._id} draggableId={String(card._id)} index={index}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    {/* Ensure fetchLists is passed down here */}
+                    <Card card={card} fetchCards={fetchLists} />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
     </div>
   );
 }
 
 export default List;
-

@@ -9,5 +9,6 @@ router.get('/:listId', cardController.getCardsByListId); // Assuming this is mea
 router.get('/:id', cardController.getCardById); // Make sure this doesn't conflict with `/:listId`
 router.patch('/:id', cardController.updateCard);
 router.delete('/:id', cardController.deleteCard);
+router.post('/cards/move', cardController.moveCard);
 
 module.exports = router;

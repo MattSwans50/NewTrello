@@ -1,4 +1,4 @@
-import React, { useState , useEffect } from 'react';
+import React, { useState , useEffect , useCallback } from 'react';
 import List from './List'; // Adjust the path as necessary based on your project structure
 import { DragDropContext, Droppable } from 'react-beautiful-dnd';
 
@@ -22,12 +22,13 @@ function Board({ lists: initialLists = [], boardId }) {
         setLists((prevLists) => [...prevLists, newList]); // Update the lists state
         setShowCreateListForm(false);
         setNewListTitle('');
+        await fetchLists(); // Ensure fetchLists is awaited
       }
     } catch (error) {
       console.error('Failed to create list:', error);
     }
   };
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     try {
       const response = await fetch(`http://localhost:5000/api/lists/board/${boardId}`);
       if (response.ok) {
@@ -37,29 +38,39 @@ function Board({ lists: initialLists = [], boardId }) {
     } catch (error) {
       console.error('Failed to fetch lists:', error);
     }
-  };
+  }, [boardId]);
 
   const onDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
   
-    if (!destination) {
-      return;
-    }
+    if (!destination) return;
   
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
-    ) {
-      return;
-    }
+    ) return;
   
-    // Example logic for moving a card within the same list or to a different list
-    // You'll need to implement API calls to update the backend based on these changes
+    // Example API call to update the backend
+    const response = await fetch(`http://localhost:5000/api/cards/move`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        cardId: draggableId,
+        sourceListId: source.droppableId,
+        destinationListId: destination.droppableId,
+        newPosition: destination.index,
+      }),
+    });
+  
+    if (response.ok) {
+      fetchLists(); // Refresh lists to reflect the changes
+    }
   };
   useEffect(() => {
     fetchLists();
-  }, [boardId]); // Make sure to include fetchLists in the dependency array if it uses external state or props
-
+  }, [fetchLists]);
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="board">

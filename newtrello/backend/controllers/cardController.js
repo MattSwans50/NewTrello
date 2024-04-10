@@ -31,27 +31,22 @@ exports.createCard = async (req, res) => {
   try {
     const newCard = new Card({
       title: req.body.title,
-      description: req.body.description,
-      list: req.body.list, // Assuming this is the ObjectId of the list
-      assignees: req.body.assignees || [],
-      labels: req.body.labels || [],
-      dueDate: req.body.dueDate,
+      list: req.body.listId, // Ensure this matches the request body. It was previously `list: req.body.list`.
+      // Include other fields as necessary
     });
     
-    // Save the new Card document in the Cards collection
     const savedCard = await newCard.save();
 
-    // Now, find the corresponding List document and add the new card's _id to its cards array
+    // Update the list with the new card's ID
     await List.findByIdAndUpdate(
-      savedCard.list, // ObjectId of the list to which this card belongs
-      { $push: { cards: savedCard._id } }, // Add the new card's _id to the list's cards array
-      { new: true, useFindAndModify: false } // Options for findByIdAndUpdate
+      req.body.listId, // This should match the list ID sent in the request body
+      { $push: { cards: savedCard._id } },
+      { new: true, useFindAndModify: false }
     );
 
-    // Respond with the saved card
     res.status(201).json(savedCard);
   } catch (error) {
-    console.error(error); // Log the error to the console for debugging
+    console.error("Error creating card:", error);
     res.status(500).send(error.message);
   }
 };
@@ -96,6 +91,29 @@ exports.deleteAllCards = async (req, res) => {
   try {
     await Card.deleteMany({}); // Deletes all documents in the Card collection
     res.status(200).send('All cards deleted successfully');
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+};
+exports.moveCard = async (req, res) => {
+  const { cardId, sourceListId, destinationListId, newPosition } = req.body;
+
+  try {
+    // Assuming a card model has a listId and position fields
+    const card = await Card.findById(cardId);
+    if (!card) {
+      return res.status(404).send('Card not found');
+    }
+
+    // If moving to a different list, update the listId
+    if (card.listId !== destinationListId) {
+      card.listId = destinationListId;
+    }
+    // Update the card's position
+    card.position = newPosition;
+
+    await card.save();
+    res.status(200).send('Card moved successfully');
   } catch (error) {
     res.status(500).send(error.message);
   }
